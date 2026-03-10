@@ -32,4 +32,23 @@ Uma aplicação web para calculadora de oficina mecânica no GTA RP. Permite cad
 
 ## Deploy
 
-Hospedado no Vercel com PostgreSQL.
+### Vercel (pronto para deploy)
+
+Este projeto ja esta preparado para subir no Vercel com Next.js 16.
+
+Requisitos:
+- Node.js 20.9+ (definido em `engines` no `package.json`)
+
+Passo a passo:
+1. Suba o codigo para um repositorio no GitHub.
+2. No Vercel, clique em `Add New Project`.
+3. Importe o repositorio `mecanicasulRP`.
+4. Framework detectado: `Next.js`.
+5. Build command: `npm run build`.
+6. Output: `.next` (automatico do Next.js no Vercel).
+7. Clique em `Deploy`.
+
+Observacoes:
+- Atualmente os dados de cadastro e autenticacao usam `localStorage` no navegador.
+- Isso funciona no Vercel normalmente, mas os dados ficam por dispositivo/navegador.
+- Se quiser persistencia centralizada, o proximo passo e migrar para banco (ex.: Vercel Postgres).
