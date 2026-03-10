@@ -11,6 +11,7 @@ import { useRouter, useParams } from 'next/navigation';
 
 type ItemToAdd = {
   id: string;
+  sourceItemId?: string;
   name: string;
   type: 'product' | 'service' | 'box';
   partnerPrice: string;
@@ -38,6 +39,8 @@ export default function EditPartnership() {
         setName(partnership.name);
         setSelectedItems(partnership.items.map(item => ({
           ...item,
+          id: item.sourceItemId ?? item.id,
+          sourceItemId: item.sourceItemId ?? item.id,
           partnerPrice: item.partnerPrice.toString(),
         })));
       }
@@ -69,6 +72,7 @@ export default function EditPartnership() {
         name,
         items: selectedItems.map(item => ({
           ...item,
+          sourceItemId: item.sourceItemId ?? item.id,
           partnerPrice: parseFloat(item.partnerPrice),
         })),
       });

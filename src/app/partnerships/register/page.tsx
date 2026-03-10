@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 type ItemToAdd = {
   id: string;
+  sourceItemId?: string;
   name: string;
   type: 'product' | 'service' | 'box';
   partnerPrice: string;
@@ -48,6 +49,7 @@ export default function RegisterPartnership() {
         name,
         items: selectedItems.map(item => ({
           ...item,
+          sourceItemId: item.sourceItemId ?? item.id,
           partnerPrice: parseFloat(item.partnerPrice),
         })),
       });

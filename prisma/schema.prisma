@@ -83,6 +83,7 @@ model Partnership {
 
 model PartnershipItem {
   id            String      @id @default(cuid())
+  sourceItemId  String?
   name          String
   type          ItemType
   partnerPrice  Float

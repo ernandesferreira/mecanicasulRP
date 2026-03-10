@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 type PartnershipItem = {
   id: string;
+  sourceItemId?: string;
   name: string;
   type: 'product' | 'service' | 'box';
   partnerPrice: number;

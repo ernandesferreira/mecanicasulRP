@@ -60,11 +60,17 @@ export default function Cart() {
     });
   };
 
-  const getItemPrice = (itemId: string) => {
+  const getItemPrice = (item: { id: string; name: string; type: 'product' | 'service' | 'box' }) => {
     if (!selectedPartnershipId) return null;
     const partnership = partnerships.find(p => p.id === selectedPartnershipId);
     if (!partnership) return null;
-    const partnerItem = partnership.items.find(i => i.id === itemId);
+    const partnerItem = partnership.items.find(i =>
+      i.type === item.type && (
+        i.sourceItemId === item.id ||
+        i.id === item.id ||
+        (i.sourceItemId == null && i.name === item.name)
+      )
+    );
     return partnerItem ? partnerItem.partnerPrice : null;
   };
 
@@ -72,7 +78,7 @@ export default function Cart() {
     if (!selectedPartnershipId) return total;
     
     return cart.reduce((sum, item) => {
-      const partnerPrice = getItemPrice(item.id);
+      const partnerPrice = getItemPrice(item);
       const itemPrice = partnerPrice !== null ? partnerPrice : item.price;
       return sum + (itemPrice * item.quantity);
     }, 0);
@@ -297,13 +303,13 @@ export default function Cart() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between text-slate-300 text-xs">
-                        <span>{getItemPrice(item.id) !== null ? '🤝 R$' : 'R$'} {getItemPrice(item.id) !== null ? formatBRLWithoutCurrency(getItemPrice(item.id)!) : formatBRLWithoutCurrency(item.price)}</span>
-                        <span className="font-bold text-orange-400">R$ {formatBRLWithoutCurrency((getItemPrice(item.id) !== null ? getItemPrice(item.id)! : item.price) * item.quantity)}</span>
+                        <span>{getItemPrice(item) !== null ? '🤝 R$' : 'R$'} {getItemPrice(item) !== null ? formatBRLWithoutCurrency(getItemPrice(item)!) : formatBRLWithoutCurrency(item.price)}</span>
+                        <span className="font-bold text-orange-400">R$ {formatBRLWithoutCurrency((getItemPrice(item) !== null ? getItemPrice(item)! : item.price) * item.quantity)}</span>
                       </div>
                       {item.type === 'box' && (
                         <div className="text-slate-400 text-xs">
                           <p>Quantidade: {item.quantity}</p>
-                          <p>Valor a Depositar: R$ {formatBRLWithoutCurrency(((getItemPrice(item.id) !== null ? getItemPrice(item.id)! : item.price) - 10000) * item.quantity)} - Pix 160</p>
+                          <p>Valor a Depositar: R$ {formatBRLWithoutCurrency(((getItemPrice(item) !== null ? getItemPrice(item)! : item.price) - 10000) * item.quantity)} - Pix 160</p>
                         </div>
                       )}
                       {item.type === 'service' && item.km !== undefined && (

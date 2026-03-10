@@ -26,7 +26,8 @@ export async function POST(request: Request) {
       data: {
         name,
         items: {
-          create: (items ?? []).map((item: { name: string; type: string; partnerPrice: number }) => ({
+          create: (items ?? []).map((item: { id?: string; sourceItemId?: string; name: string; type: string; partnerPrice: number }) => ({
+            sourceItemId: item.sourceItemId ?? item.id ?? null,
             name: item.name,
             type: item.type,
             partnerPrice: item.partnerPrice,
