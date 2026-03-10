@@ -1,0 +1,93 @@
+// This is your Prisma schema file for Vercel Postgres (Neon)
+// Learn more at https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum ItemType {
+  product
+  service
+  box
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(user)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  cost        Float
+  partnership Float?
+  description String?
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  name            String
+  price           Float
+  image           String?
+  hasDisplacement Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("services")
+}
+
+model Box {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("boxes")
+}
+
+model Partnership {
+  id        String            @id @default(cuid())
+  name      String
+  items     PartnershipItem[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@map("partnerships")
+}
+
+model PartnershipItem {
+  id            String      @id @default(cuid())
+  name          String
+  type          ItemType
+  partnerPrice  Float
+  partnershipId String
+  partnership   Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+
+  @@map("partnership_items")
+}

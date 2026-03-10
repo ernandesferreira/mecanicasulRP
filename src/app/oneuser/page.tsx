@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -15,11 +15,21 @@ export default function OneUserSetup() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-  // Se já existe um admin, redirecionar
-  if (hasAdminUser()) {
-    router.replace('/');
-    return null;
+  useEffect(() => {
+    hasAdminUser().then(has => {
+      if (has) router.replace('/');
+      else setChecking(false);
+    });
+  }, [hasAdminUser, router]);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-300">
+        Verificando...
+      </div>
+    );
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -17,9 +17,9 @@ type Partnership = {
 
 type PartnershipsContextType = {
   partnerships: Partnership[];
-  addPartnership: (partnership: Omit<Partnership, 'id'>) => void;
-  updatePartnership: (id: string, partnership: Omit<Partnership, 'id'>) => void;
-  removePartnership: (id: string) => void;
+  addPartnership: (partnership: Omit<Partnership, 'id'>) => Promise<void>;
+  updatePartnership: (id: string, partnership: Omit<Partnership, 'id'>) => Promise<void>;
+  removePartnership: (id: string) => Promise<void>;
   getPartnershipById: (id: string) => Partnership | undefined;
 };
 
@@ -27,40 +27,39 @@ const PartnershipsContext = createContext<PartnershipsContextType | undefined>(u
 
 export function PartnershipsProvider({ children }: { children: React.ReactNode }) {
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Carregar dados do localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('partnerships');
-    if (saved) {
-      setPartnerships(JSON.parse(saved));
+  const fetchPartnerships = async () => {
+    try {
+      const res = await fetch('/api/partnerships');
+      if (res.ok) setPartnerships(await res.json());
+    } catch (error) {
+      console.error('Erro ao carregar parcerias:', error);
     }
-    setIsLoaded(true);
-  }, []);
-
-  // Salvar dados no localStorage sempre que mudam
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('partnerships', JSON.stringify(partnerships));
-    }
-  }, [partnerships, isLoaded]);
-
-  const addPartnership = (partnership: Omit<Partnership, 'id'>) => {
-    const newPartnership: Partnership = {
-      ...partnership,
-      id: Date.now().toString(),
-    };
-    setPartnerships(prev => [...prev, newPartnership]);
   };
 
-  const updatePartnership = (id: string, partnership: Omit<Partnership, 'id'>) => {
-    setPartnerships(prev =>
-      prev.map(p => (p.id === id ? { ...p, ...partnership } : p))
-    );
+  useEffect(() => { fetchPartnerships(); }, []);
+
+  const addPartnership = async (partnership: Omit<Partnership, 'id'>) => {
+    await fetch('/api/partnerships', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partnership),
+    });
+    await fetchPartnerships();
   };
 
-  const removePartnership = (id: string) => {
-    setPartnerships(prev => prev.filter(p => p.id !== id));
+  const updatePartnership = async (id: string, partnership: Omit<Partnership, 'id'>) => {
+    await fetch(`/api/partnerships/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partnership),
+    });
+    await fetchPartnerships();
+  };
+
+  const removePartnership = async (id: string) => {
+    await fetch(`/api/partnerships/${id}`, { method: 'DELETE' });
+    await fetchPartnerships();
   };
 
   const getPartnershipById = (id: string): Partnership | undefined => {

@@ -11,65 +11,52 @@ type Box = {
 
 type BoxesContextType = {
   boxes: Box[];
-  addBox: (box: Omit<Box, 'id'>) => void;
-  updateBox: (id: string, box: Omit<Box, 'id'>) => void;
-  removeBox: (id: string) => void;
+  addBox: (box: Omit<Box, 'id'>) => Promise<void>;
+  updateBox: (id: string, box: Omit<Box, 'id'>) => Promise<void>;
+  removeBox: (id: string) => Promise<void>;
   getBoxById: (id: string) => Box | undefined;
 };
 
 const BoxesContext = createContext<BoxesContextType | undefined>(undefined);
 
-const initialBoxes: Box[] = [
-  { id: '1', name: 'Box Básico', price: 200 },
-  { id: '2', name: 'Box Premium', price: 500 },
-];
-
 export function BoxesProvider({ children }: { children: React.ReactNode }) {
-  const [boxes, setBoxes] = useState<Box[]>(initialBoxes);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [boxes, setBoxes] = useState<Box[]>([]);
 
-  // Carregar dados do localStorage ao montar
-  useEffect(() => {
-    const savedBoxes = localStorage.getItem('boxes');
-    if (savedBoxes) {
-      try {
-        setBoxes(JSON.parse(savedBoxes));
-      } catch (error) {
-        console.error('Erro ao carregar boxes:', error);
-        setBoxes(initialBoxes);
-      }
+  const fetchBoxes = async () => {
+    try {
+      const res = await fetch('/api/boxes');
+      if (res.ok) setBoxes(await res.json());
+    } catch (error) {
+      console.error('Erro ao carregar boxes:', error);
     }
-    setIsLoaded(true);
-  }, []);
-
-  // Salvar dados no localStorage sempre que mudam
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('boxes', JSON.stringify(boxes));
-    }
-  }, [boxes, isLoaded]);
-
-  const addBox = (box: Omit<Box, 'id'>) => {
-    const newBox: Box = {
-      ...box,
-      id: Date.now().toString(),
-    };
-    setBoxes(prev => [...prev, newBox]);
   };
 
-  const updateBox = (id: string, box: Omit<Box, 'id'>) => {
-    setBoxes(prev => 
-      prev.map(b => b.id === id ? { ...b, ...box } : b)
-    );
+  useEffect(() => { fetchBoxes(); }, []);
+
+  const addBox = async (box: Omit<Box, 'id'>) => {
+    await fetch('/api/boxes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(box),
+    });
+    await fetchBoxes();
   };
 
-  const removeBox = (id: string) => {
-    setBoxes(prev => prev.filter(box => box.id !== id));
+  const updateBox = async (id: string, box: Omit<Box, 'id'>) => {
+    await fetch(`/api/boxes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(box),
+    });
+    await fetchBoxes();
   };
 
-  const getBoxById = (id: string) => {
-    return boxes.find(box => box.id === id);
+  const removeBox = async (id: string) => {
+    await fetch(`/api/boxes/${id}`, { method: 'DELETE' });
+    await fetchBoxes();
   };
+
+  const getBoxById = (id: string) => boxes.find(b => b.id === id);
 
   return (
     <BoxesContext.Provider value={{ boxes, addBox, updateBox, removeBox, getBoxById }}>

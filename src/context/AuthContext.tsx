@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 type User = {
   id: string;
@@ -15,7 +15,7 @@ type AuthContextType = {
   register: (name: string, email: string, password: string, role: 'admin' | 'user') => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
-  hasAdminUser: () => boolean;
+  hasAdminUser: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar usuário do localStorage ao montar
+  // Carregar sessão do localStorage ao montar
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // Salvar usuário no localStorage quando muda
+  // Persistir sessão no localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -48,54 +48,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const login = async (email: string, password: string, requiredRole?: 'admin' | 'user'): Promise<boolean> => {
-    // Simulação de login - em produção, isso seria uma chamada para API
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      if (requiredRole && foundUser.role !== requiredRole) {
-        return false;
-      }
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, requiredRole }),
+      });
+
+      if (!res.ok) return false;
+
+      const { user: loggedUser } = await res.json();
+      setUser(loggedUser);
       return true;
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return false;
     }
-    return false;
   };
 
   const register = async (name: string, email: string, password: string, role: 'admin' | 'user'): Promise<boolean> => {
-    // Simulação de registro - em produção, isso seria uma chamada para API
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    // Verificar se email já existe
-    if (users.some((u: any) => u.email === email)) {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      if (!res.ok) return false;
+
+      const newUser = await res.json();
+      setUser(newUser);
+      return true;
+    } catch (error) {
+      console.error('Erro no registro:', error);
       return false;
     }
-
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password, // Em produção, senha deve ser hashada
-      role,
-    };
-
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    return true;
   };
 
   const logout = () => {
     setUser(null);
   };
 
-  const hasAdminUser = (): boolean => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    return users.some((u: any) => u.role === 'admin');
-  };
+  const hasAdminUser = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/has-admin');
+      if (!res.ok) return false;
+      const { hasAdmin } = await res.json();
+      return hasAdmin;
+    } catch {
+      return false;
+    }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isLoading, hasAdminUser }}>

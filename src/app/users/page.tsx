@@ -26,40 +26,45 @@ export default function UsersPage() {
     loadUsers()
   }, [])
 
-  const loadUsers = () => {
-    const storedUsers = localStorage.getItem('users')
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers))
+  const loadUsers = async () => {
+    try {
+      const res = await fetch('/api/users')
+      if (res.ok) setUsers(await res.json())
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error)
     }
   }
 
-  const saveUsers = (newUsers: User[]) => {
-    localStorage.setItem('users', JSON.stringify(newUsers))
-    setUsers(newUsers)
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (editingUser) {
-      // Edit existing user
-      const updatedUsers = users.map(u =>
-        u.id === editingUser.id
-          ? { ...u, name: formData.name, email: formData.email, role: formData.role }
-          : u
-      )
-      saveUsers(updatedUsers)
-    } else {
-      // Create new user
-      const newUser: User = {
-        id: Date.now().toString(),
+      const body: Record<string, string> = {
         name: formData.name,
         email: formData.email,
-        role: formData.role
+        role: formData.role,
       }
-      saveUsers([...users, newUser])
+      if (formData.password) body.password = formData.password
+
+      await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } else {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        }),
+      })
     }
 
+    await loadUsers()
     setShowModal(false)
     setEditingUser(null)
     setFormData({ name: '', email: '', password: '', role: 'user' })
@@ -70,16 +75,16 @@ export default function UsersPage() {
     setFormData({
       name: user.name,
       email: user.email,
-      password: '', // Don't show password
+      password: '',
       role: user.role
     })
     setShowModal(true)
   }
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
-      const updatedUsers = users.filter(u => u.id !== userId)
-      saveUsers(updatedUsers)
+      await fetch(`/api/users/${userId}`, { method: 'DELETE' })
+      await loadUsers()
     }
   }
 

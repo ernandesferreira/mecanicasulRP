@@ -12,9 +12,9 @@ export default function AccessGuard({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [hasAdmin, setHasAdmin] = useState<boolean | null>(null);
 
-  // Check if admin exists (only on client side)
+  // Verificar se existe admin no banco (assíncrono)
   useEffect(() => {
-    setHasAdmin(hasAdminUser());
+    hasAdminUser().then(result => setHasAdmin(result));
   }, [hasAdminUser]);
 
   const isPublicPath = PUBLIC_PATHS.includes(pathname);

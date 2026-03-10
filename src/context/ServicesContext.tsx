@@ -12,65 +12,52 @@ type Service = {
 
 type ServicesContextType = {
   services: Service[];
-  addService: (service: Omit<Service, 'id'>) => void;
-  updateService: (id: string, service: Omit<Service, 'id'>) => void;
-  removeService: (id: string) => void;
+  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  updateService: (id: string, service: Omit<Service, 'id'>) => Promise<void>;
+  removeService: (id: string) => Promise<void>;
   getServiceById: (id: string) => Service | undefined;
 };
 
 const ServicesContext = createContext<ServicesContextType | undefined>(undefined);
 
-const initialServices: Service[] = [
-  { id: '1', name: 'Troca de Óleo', price: 100 },
-  { id: '2', name: 'Revisão Completa', price: 300 },
-];
-
 export function ServicesProvider({ children }: { children: React.ReactNode }) {
-  const [services, setServices] = useState<Service[]>(initialServices);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
 
-  // Carregar dados do localStorage ao montar
-  useEffect(() => {
-    const savedServices = localStorage.getItem('services');
-    if (savedServices) {
-      try {
-        setServices(JSON.parse(savedServices));
-      } catch (error) {
-        console.error('Erro ao carregar serviços:', error);
-        setServices(initialServices);
-      }
+  const fetchServices = async () => {
+    try {
+      const res = await fetch('/api/services');
+      if (res.ok) setServices(await res.json());
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
     }
-    setIsLoaded(true);
-  }, []);
-
-  // Salvar dados no localStorage sempre que mudam
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('services', JSON.stringify(services));
-    }
-  }, [services, isLoaded]);
-
-  const addService = (service: Omit<Service, 'id'>) => {
-    const newService: Service = {
-      ...service,
-      id: Date.now().toString(),
-    };
-    setServices(prev => [...prev, newService]);
   };
 
-  const updateService = (id: string, service: Omit<Service, 'id'>) => {
-    setServices(prev => 
-      prev.map(s => s.id === id ? { ...s, ...service } : s)
-    );
+  useEffect(() => { fetchServices(); }, []);
+
+  const addService = async (service: Omit<Service, 'id'>) => {
+    await fetch('/api/services', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(service),
+    });
+    await fetchServices();
   };
 
-  const removeService = (id: string) => {
-    setServices(prev => prev.filter(service => service.id !== id));
+  const updateService = async (id: string, service: Omit<Service, 'id'>) => {
+    await fetch(`/api/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(service),
+    });
+    await fetchServices();
   };
 
-  const getServiceById = (id: string) => {
-    return services.find(service => service.id === id);
+  const removeService = async (id: string) => {
+    await fetch(`/api/services/${id}`, { method: 'DELETE' });
+    await fetchServices();
   };
+
+  const getServiceById = (id: string) => services.find(s => s.id === id);
 
   return (
     <ServicesContext.Provider value={{ services, addService, updateService, removeService, getServiceById }}>
