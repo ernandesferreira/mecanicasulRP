@@ -15,6 +15,7 @@ type AuthContextType = {
   register: (name: string, email: string, password: string, role: 'admin' | 'user') => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+  hasAdminUser: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,8 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const hasAdminUser = (): boolean => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    return users.some((u: any) => u.role === 'admin');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, hasAdminUser }}>
       {children}
     </AuthContext.Provider>
   );
